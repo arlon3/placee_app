@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class UIUtils {
-  // カラーパレット - 淡色系ゆるふわ
-  static const Color primaryColor = Color(0xFFFFB6C1); // ライトピンク
-  static const Color secondaryColor = Color(0xFFE6E6FA); // ラベンダー
-  static const Color accentColor = Color(0xFFFFF8DC); // コーンシルク
-  static const Color backgroundColor = Color(0xFFFFFAF0); // フローラルホワイト
-  static const Color cardColor = Color(0xFFFFF5EE); // シーシェル
-  static const Color textColor = Color(0xFF4A4A4A);
-  static const Color subtextColor = Color(0xFF9E9E9E);
+  // カラーパレット - ピンク＆白の清潔感あるデザイン
+  static const Color primaryColor = Color(0xFFFF69B4); // ホットピンク
+  static const Color secondaryColor = Color(0xFFFFB6D9); // ライトピンク
+  static const Color accentColor = Color(0xFFFF1493); // ディープピンク
+  static const Color backgroundColor = Color(0xFFFFFFFF); // 純白
+  static const Color cardColor = Color(0xFFFFFAFC); // ごく薄いピンク
+  static const Color textColor = Color(0xFF333333);
+  static const Color subtextColor = Color(0xFF999999);
 
   // ピンカテゴリ色
-  static const Color visitedColor = Color(0xFFFFB6C1); // ピンク
-  static const Color wantToGoColor = Color(0xFF98D8C8); // ミントグリーン
-  static const Color diaryColor = Color(0xFFFFDAB9); // ピーチ
+  static const Color visitedColor = Color(0xFFFF69B4); // ホットピンク
+  static const Color wantToGoColor = Color(0xFF87CEEB); // スカイブルー
+  static const Color diaryColor = Color(0xFFFFB6D9); // ライトピンク
 
   // テーマデータ
   static ThemeData get lightTheme {

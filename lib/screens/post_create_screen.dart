@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:flutter_map/flutter_map.dart';
 import '../models/pin.dart';
 import '../services/post_service.dart';
 import '../services/image_service.dart';
@@ -24,17 +25,17 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   List<File> _selectedImages = [];
   double _rating = 3.0;
   List<String> _anniversaryTags = [];
   DateTime _visitDate = DateTime.now();
-  
+
   PinCategory _selectedCategory = PinCategory.visited;
   String _selectedEmoji = '📍';
   Color _selectedColor = UIUtils.visitedColor;
   PinShape _selectedShape = PinShape.circle;
-  
+
   LatLng? _pinLocation;
   bool _isSubmitting = false;
 
@@ -54,7 +55,7 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
   @override
   Widget build(BuildContext context) {
     final maxPhotos = SubscriptionService.maxPhotos;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('投稿を作成'),
@@ -92,6 +93,8 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
             _buildRatingSection(),
             const SizedBox(height: 24),
             _buildDateSection(),
+            const SizedBox(height: 24),
+            _buildLocationSection(),
             const SizedBox(height: 24),
             _buildAnniversaryTagSection(),
           ],
@@ -284,13 +287,15 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
           children: [
             Expanded(
               child: ListTile(
-                leading: Text(_selectedEmoji, style: const TextStyle(fontSize: 32)),
+                leading:
+                    Text(_selectedEmoji, style: const TextStyle(fontSize: 32)),
                 title: const Text('絵文字'),
                 trailing: const Icon(Icons.edit),
                 onTap: _selectEmoji,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: UIUtils.primaryColor.withOpacity(0.3)),
+                  side:
+                      BorderSide(color: UIUtils.primaryColor.withOpacity(0.3)),
                 ),
               ),
             ),
@@ -335,6 +340,101 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: UIUtils.primaryColor.withOpacity(0.3)),
       ),
+    );
+  }
+
+  Widget _buildLocationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '場所',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: _selectLocation,
+          child: Container(
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: UIUtils.primaryColor.withOpacity(0.3),
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                children: [
+                  FlutterMap(
+                    options: MapOptions(
+                      initialCenter: _pinLocation!,
+                      initialZoom: 15.0,
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.none,
+                      ),
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                        subdomains: const ['a', 'b', 'c'],
+                      ),
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: _pinLocation!,
+                            width: 40,
+                            height: 40,
+                            child: const Icon(
+                              Icons.location_pin,
+                              color: UIUtils.primaryColor,
+                              size: 40,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.3),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Positioned(
+                    bottom: 12,
+                    left: 12,
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_location,
+                            color: Colors.white, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'タップして場所を選択',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -433,6 +533,21 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
     }
   }
 
+  Future<void> _selectLocation() async {
+    final result = await showDialog<LatLng>(
+      context: context,
+      builder: (context) => _LocationPickerDialog(
+        initialLocation: _pinLocation!,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _pinLocation = result;
+      });
+    }
+  }
+
   Future<void> _addAnniversaryTag() async {
     final tag = await DateTagInputDialog.show(context);
     if (tag != null && tag.isNotEmpty) {
@@ -501,5 +616,110 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
         });
       }
     }
+  }
+}
+
+class _LocationPickerDialog extends StatefulWidget {
+  final LatLng initialLocation;
+
+  const _LocationPickerDialog({required this.initialLocation});
+
+  @override
+  State<_LocationPickerDialog> createState() => _LocationPickerDialogState();
+}
+
+class _LocationPickerDialogState extends State<_LocationPickerDialog> {
+  late LatLng _selectedLocation;
+  final MapController _mapController = MapController();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedLocation = widget.initialLocation;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        height: 500,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '場所を選択',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: _selectedLocation,
+                    initialZoom: 15.0,
+                    onTap: (tapPosition, point) {
+                      setState(() {
+                        _selectedLocation = point;
+                      });
+                    },
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                      subdomains: const ['a', 'b', 'c'],
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _selectedLocation,
+                          width: 40,
+                          height: 40,
+                          child: const Icon(
+                            Icons.location_pin,
+                            color: UIUtils.primaryColor,
+                            size: 40,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'タップして場所を選択してください',
+              style: TextStyle(
+                fontSize: 14,
+                color: UIUtils.subtextColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, _selectedLocation),
+                child: const Text('この場所に決定'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

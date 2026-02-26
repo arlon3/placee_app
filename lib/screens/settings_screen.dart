@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../services/sync_service.dart';
+
 import '../services/subscription_service.dart';
+import '../services/sync_service.dart';
 import '../utils/ui_utils.dart';
-import 'subscription_screen.dart';
 import 'pair_management_screen.dart';
+import 'subscription_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -25,16 +26,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSubscriptionTile(),
           _buildPairManagementTile(),
           const Divider(),
-          
           _buildSection('同期設定'),
           _buildSyncModeTile(),
           _buildManualSyncTile(),
           const Divider(),
-          
           _buildSection('通知'),
           _buildNotificationTile(),
           const Divider(),
-          
           _buildSection('その他'),
           _buildAboutTile(),
           _buildLogoutTile(),
@@ -59,7 +57,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSubscriptionTile() {
     final isPremium = SubscriptionService.isPremium;
-    
+
     return ListTile(
       leading: const Icon(Icons.star),
       title: const Text('サブスクリプション'),
@@ -91,7 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSyncModeTile() {
     final currentMode = SyncService.syncMode;
-    
+
     return ListTile(
       leading: const Icon(Icons.sync),
       title: const Text('同期モード'),
@@ -122,14 +120,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildNotificationTile() {
-    return SwitchListTile(
-      secondary: const Icon(Icons.notifications),
-      title: const Text('通知'),
-      subtitle: const Text('記念日や「去年の今日」を通知'),
-      value: true,
-      onChanged: (value) {
-        // TODO: 通知設定の保存
-      },
+    return Column(
+      children: [
+        SwitchListTile(
+          secondary: const Icon(Icons.notifications),
+          title: const Text('通知'),
+          subtitle: const Text('アプリの通知を受け取る'),
+          value: true,
+          onChanged: (value) {
+            // TODO: 通知設定の保存
+            setState(() {});
+          },
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 72),
+          child: Column(
+            children: [
+              SwitchListTile(
+                title: const Text('記念日通知'),
+                subtitle: const Text('記念日や「去年の今日」を通知'),
+                value: true,
+                onChanged: (value) {
+                  // TODO: 設定保存
+                },
+              ),
+              SwitchListTile(
+                title: const Text('パートナーの投稿'),
+                subtitle: const Text('パートナーが投稿したときに通知'),
+                value: true,
+                onChanged: (value) {
+                  // TODO: 設定保存
+                },
+              ),
+              SwitchListTile(
+                title: const Text('パートナーのコメント'),
+                subtitle: const Text('パートナーがコメントしたときに通知'),
+                value: true,
+                onChanged: (value) {
+                  // TODO: 設定保存
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

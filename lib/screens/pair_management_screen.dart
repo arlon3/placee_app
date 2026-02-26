@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../models/group.dart';
 import '../services/pair_service.dart';
 import '../utils/ui_utils.dart';
@@ -36,7 +37,7 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
     try {
       // TODO: 実際のグループIDを取得
       final group = await PairService.getGroup('group_id');
-      
+
       setState(() {
         _group = group;
         _isLoading = false;
@@ -81,36 +82,110 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
   }
 
   Widget _buildCreateGroup() {
-    return Center(
+    return Padding(
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.people_outline,
-            size: 80,
-            color: UIUtils.subtextColor,
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: UIUtils.primaryColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.favorite,
+              size: 80,
+              color: UIUtils.primaryColor,
+            ),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'パートナーと一緒に\n思い出を共有しよう',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
-            'グループを作成',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'パートナーとグループを作成して\n思い出を共有しましょう',
+            'グループを作成して招待コードを\nパートナーに共有すると、\n二人で思い出を管理できます',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
               color: UIUtils.subtextColor,
+              height: 1.6,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 48),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _createGroup,
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('グループを作成'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.all(20),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _showJoinDialog,
+            icon: const Icon(Icons.group_add),
+            label: const Text('招待コードで参加'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.all(20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showJoinDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('グループに参加'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'パートナーから受け取った\n招待コードを入力してください',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _inviteCodeController,
+              decoration: const InputDecoration(
+                hintText: '招待コード（6桁）',
+                border: OutlineInputBorder(),
+              ),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 24,
+                letterSpacing: 4,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLength: 6,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
           ElevatedButton(
-            onPressed: _createGroup,
-            child: const Text('グループを作成'),
+            onPressed: () {
+              // TODO: 招待コードで参加
+              Navigator.pop(context);
+              UIUtils.showSnackBar(context, 'グループに参加しました');
+            },
+            child: const Text('参加'),
           ),
         ],
       ),
@@ -322,11 +397,11 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
       name: 'カップルグループ',
       ownerId: 'user_id',
     );
-    
+
     setState(() {
       _group = group;
     });
-    
+
     if (mounted) {
       UIUtils.showSnackBar(context, 'グループを作成しました');
     }
@@ -349,7 +424,7 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
       setState(() {
         _group = _group!;
       });
-      
+
       if (mounted) {
         UIUtils.showSnackBar(context, '新しい招待コードを生成しました');
       }
@@ -369,11 +444,11 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
         group: _group!,
         userId: memberId,
       );
-      
+
       setState(() {
         _group = updatedGroup;
       });
-      
+
       if (mounted) {
         UIUtils.showSnackBar(context, 'メンバーを削除しました');
       }
@@ -394,7 +469,7 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
           group: _group!,
           userId: 'user_id',
         );
-        
+
         if (mounted) {
           UIUtils.showSnackBar(context, 'グループから退出しました');
           Navigator.pop(context);

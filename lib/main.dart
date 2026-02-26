@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'screens/onboarding_screen.dart';
-import 'screens/map_screen.dart';
-import 'screens/timeline_screen.dart';
+
 import 'screens/diary_screen.dart';
-import 'screens/settings_screen.dart';
-import 'services/local_storage_service.dart';
-import 'services/sync_service.dart';
-import 'services/subscription_service.dart';
+import 'screens/map_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/post_create_screen.dart';
+import 'screens/timeline_screen.dart';
 import 'services/ad_service.dart';
+import 'services/local_storage_service.dart';
 import 'services/notification_service.dart';
+import 'services/sync_service.dart';
 import 'utils/ui_utils.dart';
 import 'widgets/banner_ad.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // サービスの初期化
   await LocalStorageService.initialize();
   await SyncService.initialize();
   await AdService.initialize();
   await NotificationService.initialize();
-  
+
   runApp(const PlaceeApp());
 }
 
@@ -55,9 +54,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkFirstLaunch() async {
     await Future.delayed(const Duration(seconds: 1));
-    
+
     final isFirstLaunch = LocalStorageService.getBool('first_launch') ?? true;
-    
+
     if (mounted) {
       if (isFirstLaunch) {
         Navigator.of(context).pushReplacement(
@@ -125,7 +124,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-  
+
   final List<Widget> _screens = [
     const MapScreen(),
     const TimelineScreen(),
@@ -135,7 +134,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final shouldShowAd = AdService.shouldShowAd(_getRouteName());
-    
+
     return Scaffold(
       body: Column(
         children: [
@@ -168,7 +167,9 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
       floatingActionButton: _buildFAB(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButtonLocation: shouldShowAd
+          ? FloatingActionButtonLocation.endContained
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -177,7 +178,12 @@ class _MainScreenState extends State<MainScreen> {
       // マップ画面では投稿作成ボタン
       return FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, '/post/create');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PostCreateScreen(),
+            ),
+          );
         },
         child: const Icon(Icons.add),
       );
@@ -185,7 +191,8 @@ class _MainScreenState extends State<MainScreen> {
       // 日記画面では日記作成ボタン
       return FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, '/diary/create');
+          // Navigator.pushNamed(context, '/diary/create');
+          UIUtils.showSnackBar(context, '日記作成機能は開発中です');
         },
         child: const Icon(Icons.edit),
       );

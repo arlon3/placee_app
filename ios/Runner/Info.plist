@@ -46,7 +46,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>写真を撮影して投稿に追加するために使用します</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>現在地を取得して地図に表示するために使用します</string>
+	<string>現在地を表示するために位置情報が必要です</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
