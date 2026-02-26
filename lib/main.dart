@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'screens/diary_create_screen.dart';
 import 'screens/diary_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -138,7 +139,15 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: Column(
         children: [
-          Expanded(child: _screens[_currentIndex]),
+          Expanded(
+            child: Stack(
+              children: [
+                _screens[_currentIndex],
+                if (_currentIndex == 0) _buildMapFAB(),
+                if (_currentIndex == 2) _buildDiaryFAB(),
+              ],
+            ),
+          ),
           if (shouldShowAd) const BannerAdWidget(),
         ],
       ),
@@ -166,17 +175,16 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      floatingActionButton: _buildFAB(),
-      floatingActionButtonLocation: shouldShowAd
-          ? FloatingActionButtonLocation.endContained
-          : FloatingActionButtonLocation.endFloat,
     );
   }
 
-  Widget? _buildFAB() {
-    if (_currentIndex == 0) {
-      // マップ画面では投稿作成ボタン
-      return FloatingActionButton(
+  // マップ画面の+ボタン（マイナスボタンの下に配置）
+  Widget _buildMapFAB() {
+    return Positioned(
+      right: 16,
+      bottom: 16, // ズームアウトボタンの下（100 + 8 + 56 + 8）
+      child: FloatingActionButton(
+        heroTag: 'create_post',
         onPressed: () {
           Navigator.push(
             context,
@@ -186,18 +194,32 @@ class _MainScreenState extends State<MainScreen> {
           );
         },
         child: const Icon(Icons.add),
-      );
-    } else if (_currentIndex == 2) {
-      // 日記画面では日記作成ボタン
-      return FloatingActionButton(
-        onPressed: () {
-          // Navigator.pushNamed(context, '/diary/create');
-          UIUtils.showSnackBar(context, '日記作成機能は開発中です');
+      ),
+    );
+  }
+
+  // 日記画面の+ボタン
+  Widget _buildDiaryFAB() {
+    return Positioned(
+      right: 16,
+      bottom: 16,
+      child: FloatingActionButton(
+        heroTag: 'create_diary',
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DiaryCreateScreen(),
+            ),
+          );
+          // 日記作成後にリロード
+          if (result == true && _currentIndex == 2) {
+            setState(() {});
+          }
         },
         child: const Icon(Icons.edit),
-      );
-    }
-    return null;
+      ),
+    );
   }
 
   String _getRouteName() {

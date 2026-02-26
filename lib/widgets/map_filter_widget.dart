@@ -3,15 +3,19 @@ import '../models/pin.dart';
 import '../utils/ui_utils.dart';
 
 class MapFilterWidget extends StatefulWidget {
-  final Set<PinCategory> selectedCategories;
+  final Set<PostType> selectedTypes;
+  final Set<PostCategory> selectedCategories;
   final DateTimeRange? dateRange;
-  final Function(Set<PinCategory>) onCategoryChanged;
+  final Function(Set<PostType>) onTypeChanged;
+  final Function(Set<PostCategory>) onCategoryChanged;
   final Function(DateTimeRange?) onDateRangeChanged;
 
   const MapFilterWidget({
     super.key,
+    required this.selectedTypes,
     required this.selectedCategories,
-    this.dateRange,
+    required this.dateRange,
+    required this.onTypeChanged,
     required this.onCategoryChanged,
     required this.onDateRangeChanged,
   });
@@ -21,12 +25,14 @@ class MapFilterWidget extends StatefulWidget {
 }
 
 class _MapFilterWidgetState extends State<MapFilterWidget> {
-  late Set<PinCategory> _selectedCategories;
+  late Set<PostType> _selectedTypes;
+  late Set<PostCategory> _selectedCategories;
   late DateTimeRange? _dateRange;
 
   @override
   void initState() {
     super.initState();
+    _selectedTypes = Set.from(widget.selectedTypes);
     _selectedCategories = Set.from(widget.selectedCategories);
     _dateRange = widget.dateRange;
   }
@@ -34,11 +40,11 @@ class _MapFilterWidgetState extends State<MapFilterWidget> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,9 +55,8 @@ class _MapFilterWidgetState extends State<MapFilterWidget> {
               const Text(
                 'フィルター',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: UIUtils.textColor,
                 ),
               ),
               TextButton(
@@ -60,27 +65,11 @@ class _MapFilterWidgetState extends State<MapFilterWidget> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'カテゴリ',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: UIUtils.textColor,
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
+          _buildTypeFilters(),
+          const SizedBox(height: 24),
           _buildCategoryFilters(),
-          const SizedBox(height: 16),
-          const Text(
-            '期間',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: UIUtils.textColor,
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
           _buildDateRangeFilter(),
           const SizedBox(height: 24),
           SizedBox(
@@ -95,66 +84,151 @@ class _MapFilterWidgetState extends State<MapFilterWidget> {
     );
   }
 
+  Widget _buildTypeFilters() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '投稿タイプ',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: PostType.values.map((type) {
+            final isSelected = _selectedTypes.contains(type);
+            final label = type == PostType.visited ? '行った' : '行きたい';
+            final icon = type == PostType.visited
+                ? Icons.check_circle
+                : Icons.favorite;
+
+            return FilterChip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 16),
+                  const SizedBox(width: 4),
+                  Text(label),
+                ],
+              ),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  if (selected) {
+                    _selectedTypes.add(type);
+                  } else {
+                    _selectedTypes.remove(type);
+                  }
+                });
+              },
+              selectedColor: UIUtils.primaryColor.withOpacity(0.3),
+              checkmarkColor: UIUtils.primaryColor,
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCategoryFilters() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: PinCategory.values.map((category) {
-        final isSelected = _selectedCategories.contains(category);
-        return FilterChip(
-          label: Text(_getCategoryLabel(category)),
-          selected: isSelected,
-          selectedColor: _getCategoryColor(category).withOpacity(0.3),
-          onSelected: (selected) {
-            setState(() {
-              if (selected) {
-                _selectedCategories.add(category);
-              } else {
-                _selectedCategories.remove(category);
-              }
-            });
-          },
-        );
-      }).toList(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'カテゴリ',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: PostCategory.values.map((category) {
+            final isSelected = _selectedCategories.contains(category);
+            final categoryKey = category.toString().split('.').last;
+            final color = UIUtils.getCategoryColor(categoryKey);
+            final label = UIUtils.getCategoryLabel(categoryKey);
+
+            return FilterChip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(label),
+                ],
+              ),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  if (selected) {
+                    _selectedCategories.add(category);
+                  } else {
+                    _selectedCategories.remove(category);
+                  }
+                });
+              },
+              selectedColor: color.withOpacity(0.3),
+              checkmarkColor: color,
+              side: BorderSide(
+                color: isSelected ? color : Colors.grey[300]!,
+                width: isSelected ? 2 : 1,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
   Widget _buildDateRangeFilter() {
-    return OutlinedButton.icon(
-      onPressed: _selectDateRange,
-      icon: const Icon(Icons.calendar_today),
-      label: Text(
-        _dateRange != null
-            ? '${_formatDate(_dateRange!.start)} - ${_formatDate(_dateRange!.end)}'
-            : '期間を選択',
-      ),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.all(16),
-        alignment: Alignment.centerLeft,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '期間',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ListTile(
+          leading: const Icon(Icons.calendar_today, color: UIUtils.primaryColor),
+          title: Text(_dateRange != null
+              ? '${_formatDate(_dateRange!.start)} - ${_formatDate(_dateRange!.end)}'
+              : '期間を選択'),
+          trailing: _dateRange != null
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    setState(() {
+                      _dateRange = null;
+                    });
+                  },
+                )
+              : const Icon(Icons.edit),
+          onTap: _selectDateRange,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: UIUtils.primaryColor.withOpacity(0.3)),
+          ),
+        ),
+      ],
     );
-  }
-
-  String _getCategoryLabel(PinCategory category) {
-    switch (category) {
-      case PinCategory.visited:
-        return '行った場所';
-      case PinCategory.wantToGo:
-        return '行きたい場所';
-      case PinCategory.diary:
-        return '日記';
-    }
-  }
-
-  Color _getCategoryColor(PinCategory category) {
-    switch (category) {
-      case PinCategory.visited:
-        return UIUtils.visitedColor;
-      case PinCategory.wantToGo:
-        return UIUtils.wantToGoColor;
-      case PinCategory.diary:
-        return UIUtils.diaryColor;
-    }
   }
 
   String _formatDate(DateTime date) {
@@ -164,19 +238,9 @@ class _MapFilterWidgetState extends State<MapFilterWidget> {
   Future<void> _selectDateRange() async {
     final picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(2020),
+      firstDate: DateTime(2000),
       lastDate: DateTime.now(),
       initialDateRange: _dateRange,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: UIUtils.primaryColor,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (picked != null) {
@@ -188,12 +252,14 @@ class _MapFilterWidgetState extends State<MapFilterWidget> {
 
   void _resetFilters() {
     setState(() {
-      _selectedCategories = Set.from(PinCategory.values);
+      _selectedTypes = Set.from(PostType.values);
+      _selectedCategories = Set.from(PostCategory.values);
       _dateRange = null;
     });
   }
 
   void _applyFilters() {
+    widget.onTypeChanged(_selectedTypes);
     widget.onCategoryChanged(_selectedCategories);
     widget.onDateRangeChanged(_dateRange);
     Navigator.pop(context);

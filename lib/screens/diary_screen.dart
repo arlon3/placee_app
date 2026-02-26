@@ -46,8 +46,19 @@ class _DiaryScreenState extends State<DiaryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('日記'),
+        title: const Text('📖 日記'),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                UIUtils.diaryColor,
+                UIUtils.diaryColor.withOpacity(0.8),
+              ],
+            ),
+          ),
+        ),
       ),
+      backgroundColor: UIUtils.backgroundColor,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _buildDiaryList(),
@@ -60,25 +71,45 @@ class _DiaryScreenState extends State<DiaryScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.book,
-              size: 80,
-              color: UIUtils.subtextColor,
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    UIUtils.diaryColor.withOpacity(0.2),
+                    UIUtils.accentColor.withOpacity(0.2),
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.book,
+                size: 80,
+                color: UIUtils.diaryColor,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Text(
               'まだ日記がありません',
               style: TextStyle(
-                fontSize: 16,
-                color: UIUtils.subtextColor,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: UIUtils.textColor,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              '右下のボタンから日記を作成しましょう',
-              style: TextStyle(
-                fontSize: 14,
-                color: UIUtils.subtextColor,
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: UIUtils.accentColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '右下のボタンから日記を作成しましょう ✨',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: UIUtils.subtextColor,
+                ),
               ),
             ),
           ],
@@ -88,6 +119,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
     return RefreshIndicator(
       onRefresh: _loadDiaries,
+      color: UIUtils.diaryColor,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: _diaries.length,

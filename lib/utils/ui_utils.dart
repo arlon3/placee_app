@@ -2,19 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class UIUtils {
-  // カラーパレット - ピンク＆白の清潔感あるデザイン
-  static const Color primaryColor = Color(0xFFFF69B4); // ホットピンク
-  static const Color secondaryColor = Color(0xFFFFB6D9); // ライトピンク
-  static const Color accentColor = Color(0xFFFF1493); // ディープピンク
-  static const Color backgroundColor = Color(0xFFFFFFFF); // 純白
-  static const Color cardColor = Color(0xFFFFFAFC); // ごく薄いピンク
-  static const Color textColor = Color(0xFF333333);
-  static const Color subtextColor = Color(0xFF999999);
+  // カラーパレット - つやっとしたポップで可愛いデザイン
+  static const Color primaryColor = Color(0xFFFF6B9D); // ビビッドピンク
+  static const Color secondaryColor = Color(0xFFFFC2E2); // 淡いピンク
+  static const Color accentColor = Color(0xFFFFE5B4); // クリーム色
+  static const Color backgroundColor = Color(0xFFFFFBF5); // アイボリーホワイト
+  static const Color cardColor = Color(0xFFFFFFFF); // 純白
+  static const Color textColor = Color(0xFF2D2D2D);
+  static const Color subtextColor = Color(0xFF9E9E9E);
 
-  // ピンカテゴリ色
-  static const Color visitedColor = Color(0xFFFF69B4); // ホットピンク
-  static const Color wantToGoColor = Color(0xFF87CEEB); // スカイブルー
-  static const Color diaryColor = Color(0xFFFFB6D9); // ライトピンク
+  // 投稿タイプ別の色（ピンの形を決定）
+  static const Color visitedColor = Color(0xFFFF6B9D); // ビビッドピンク（行った）
+  static const Color wantToGoColor = Color(0xFF74D7FF); // スカイブルー（行きたい）
+  static const Color diaryColor = Color(0xFFFF6B9D); // ピンク（日記用）
+
+  // カテゴリ別の色（ピンの色を決定）- より鮮やかでポップに
+  static const Color foodColor = Color(0xFFFF8A5C); // コーラルオレンジ（ご飯）
+  static const Color entertainmentColor = Color(0xFFFFD93D); // サンイエロー（遊び）
+  static const Color sightseeingColor = Color(0xFF6BCB77); // フレッシュグリーン（観光）
+  static const Color sceneryColor = Color(0xFF6AAEFF); // スカイブルー（景色）
+  static const Color shopColor = Color(0xFFBB8FCE); // ラベンダーパープル（お店）
+  static const Color otherColor = Color(0xFFAAB7B8); // ライトグレー（その他）
 
   // テーマデータ
   static ThemeData get lightTheme {
@@ -122,16 +130,30 @@ class UIUtils {
     VoidCallback? onTap,
   }) {
     return Card(
-      elevation: 2,
+      elevation: 4,
+      shadowColor: primaryColor.withOpacity(0.2),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: padding ?? const EdgeInsets.all(16),
-          child: child,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              cardColor,
+              cardColor.withOpacity(0.95),
+            ],
+          ),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: padding ?? const EdgeInsets.all(16),
+            child: child,
+          ),
         ),
       ),
     );
@@ -216,5 +238,43 @@ class UIUtils {
         ],
       ),
     );
+  }
+
+  // カテゴリに応じた色を取得
+  static Color getCategoryColor(String category) {
+    switch (category) {
+      case 'food':
+        return foodColor;
+      case 'entertainment':
+        return entertainmentColor;
+      case 'sightseeing':
+        return sightseeingColor;
+      case 'scenery':
+        return sceneryColor;
+      case 'shop':
+        return shopColor;
+      default:
+        return otherColor;
+    }
+  }
+
+  // カテゴリの表示名を取得
+  static String getCategoryLabel(String category) {
+    switch (category) {
+      case 'food':
+        return 'ご飯';
+      case 'entertainment':
+        return '遊び';
+      case 'sightseeing':
+        return '観光';
+      case 'scenery':
+        return '景色';
+      case 'shop':
+        return 'お店';
+      case 'other':
+        return 'その他';
+      default:
+        return category;
+    }
   }
 }

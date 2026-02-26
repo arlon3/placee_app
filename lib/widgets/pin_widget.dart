@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/pin.dart';
 
 class PinWidget extends StatelessWidget {
@@ -9,7 +10,7 @@ class PinWidget extends StatelessWidget {
   const PinWidget({
     super.key,
     required this.pin,
-    this.size = 40,
+    this.size = 50,
     this.onTap,
   });
 
@@ -17,38 +18,14 @@ class PinWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
+      child: CustomPaint(
+        size: Size(size, size * 1.2),
+        painter: _MapPinPainter(
           color: pin.color,
-          shape: _getBoxShape(),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            pin.emoji,
-            style: TextStyle(fontSize: size * 0.5),
-          ),
+          emoji: pin.emoji,
         ),
       ),
     );
-  }
-
-  BoxShape _getBoxShape() {
-    switch (pin.shape) {
-      case PinShape.circle:
-        return BoxShape.circle;
-      case PinShape.heart:
-      case PinShape.star:
-        return BoxShape.rectangle; // カスタムシェイプは CustomPaint で実装
-    }
   }
 }
 
@@ -61,7 +38,7 @@ class CustomShapePinWidget extends StatelessWidget {
   const CustomShapePinWidget({
     super.key,
     required this.pin,
-    this.size = 40,
+    this.size = 50,
     this.onTap,
   });
 
@@ -70,110 +47,143 @@ class CustomShapePinWidget extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: CustomPaint(
-        size: Size(size, size),
-        painter: _PinPainter(
-          shape: pin.shape,
+        size: Size(size, size * 1.2),
+        painter: _MapPinPainter(
           color: pin.color,
-        ),
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Center(
-            child: Text(
-              pin.emoji,
-              style: TextStyle(fontSize: size * 0.5),
-            ),
-          ),
+          emoji: pin.emoji,
         ),
       ),
     );
   }
 }
 
-class _PinPainter extends CustomPainter {
-  final PinShape shape;
+class _MapPinPainter extends CustomPainter {
   final Color color;
+  final String emoji;
 
-  _PinPainter({required this.shape, required this.color});
+  _MapPinPainter({required this.color, required this.emoji});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
+    final pinWidth = size.width;
+    final pinHeight = size.height;
+
+    // グラデーションの作成（画像のような赤→ピンク→紫のグラデーション）
+    final gradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        color.withOpacity(0.9),
+        color,
+        color.withOpacity(0.7),
+      ],
+    );
+
+    final gradientPaint = Paint()
+      ..shader = gradient.createShader(
+        Rect.fromLTWH(0, 0, pinWidth, pinHeight * 0.7),
+      )
       ..style = PaintingStyle.fill;
 
+    // 影の描画
     final shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.2)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      ..color = Colors.black.withOpacity(0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
-    switch (shape) {
-      case PinShape.circle:
-        canvas.drawCircle(
-          Offset(size.width / 2, size.height / 2),
-          size.width / 2,
-          paint,
-        );
-        break;
-      
-      case PinShape.heart:
-        _drawHeart(canvas, size, paint, shadowPaint);
-        break;
-      
-      case PinShape.star:
-        _drawStar(canvas, size, paint, shadowPaint);
-        break;
-    }
-  }
-
-  void _drawHeart(Canvas canvas, Size size, Paint paint, Paint shadowPaint) {
+    // マップピンの形を描画
     final path = Path();
-    final w = size.width;
-    final h = size.height;
 
-    path.moveTo(w / 2, h * 0.35);
-    path.cubicTo(w / 2, h * 0.25, w * 0.4, h * 0.15, w * 0.25, h * 0.25);
-    path.cubicTo(w * 0.1, h * 0.35, w * 0.1, h * 0.55, w * 0.25, h * 0.7);
-    path.lineTo(w / 2, h * 0.9);
-    path.lineTo(w * 0.75, h * 0.7);
-    path.cubicTo(w * 0.9, h * 0.55, w * 0.9, h * 0.35, w * 0.75, h * 0.25);
-    path.cubicTo(w * 0.6, h * 0.15, w / 2, h * 0.25, w / 2, h * 0.35);
+    // 上部の円形部分
+    final circleRadius = pinWidth * 0.4;
+    final circleCenter = Offset(pinWidth / 2, circleRadius + 2);
 
-    canvas.drawPath(path, shadowPaint);
-    canvas.drawPath(path, paint);
-  }
+    // 円を描画
+    path.addOval(Rect.fromCircle(center: circleCenter, radius: circleRadius));
 
-  void _drawStar(Canvas canvas, Size size, Paint paint, Paint shadowPaint) {
-    final path = Path();
-    final w = size.width;
-    final h = size.height;
-    final cx = w / 2;
-    final cy = h / 2;
-    final outerRadius = w / 2;
-    final innerRadius = w / 4;
+    // 下部の尖った部分
+    final tipY = pinHeight * 0.85;
+    final tipPoint = Offset(pinWidth / 2, tipY);
 
-    for (int i = 0; i < 10; i++) {
-      final angle = (i * 36 - 90) * 3.14159 / 180;
-      final radius = i.isEven ? outerRadius : innerRadius;
-      final x = cx + radius * (angle.cos());
-      final y = cy + radius * (angle.sin());
+    // 円の下部から尖った先端への線
+    final leftPoint = Offset(pinWidth / 2 - circleRadius * 0.5,
+        circleCenter.dy + circleRadius * 0.7);
+    final rightPoint = Offset(pinWidth / 2 + circleRadius * 0.5,
+        circleCenter.dy + circleRadius * 0.7);
 
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    path.close();
+    path.moveTo(leftPoint.dx, leftPoint.dy);
+    path.quadraticBezierTo(
+      pinWidth / 2 - circleRadius * 0.3,
+      tipY - circleRadius * 0.5,
+      tipPoint.dx,
+      tipPoint.dy,
+    );
+    path.quadraticBezierTo(
+      pinWidth / 2 + circleRadius * 0.3,
+      tipY - circleRadius * 0.5,
+      rightPoint.dx,
+      rightPoint.dy,
+    );
 
-    canvas.drawPath(path, shadowPaint);
-    canvas.drawPath(path, paint);
+    // 影を描画
+    canvas.drawPath(path.shift(const Offset(2, 3)), shadowPaint);
+
+    // 本体を描画
+    canvas.drawPath(path, gradientPaint);
+
+    // ハイライトを追加（つやっと感）
+    final highlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.4)
+      ..style = PaintingStyle.fill;
+
+    final highlightPath = Path();
+    highlightPath.addOval(
+      Rect.fromCircle(
+        center: Offset(
+          circleCenter.dx - circleRadius * 0.25,
+          circleCenter.dy - circleRadius * 0.25,
+        ),
+        radius: circleRadius * 0.35,
+      ),
+    );
+    canvas.drawPath(highlightPath, highlightPaint);
+
+    // 白い縁取りを追加
+    final borderPaint = Paint()
+      ..color = Colors.white.withOpacity(0.8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+
+    final borderPath = Path();
+    borderPath.addOval(
+      Rect.fromCircle(
+        center: circleCenter,
+        radius: circleRadius - 1,
+      ),
+    );
+    canvas.drawPath(borderPath, borderPaint);
+
+    // 絵文字（ハンバーガーアイコン）を描画
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: emoji,
+        style: TextStyle(
+          fontSize: circleRadius * 0.9,
+          fontFamily: 'NotoColorEmoji',
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        circleCenter.dx - textPainter.width / 2,
+        circleCenter.dy - textPainter.height / 2,
+      ),
+    );
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-extension on double {
-  double cos() => this;
-  double sin() => this;
 }

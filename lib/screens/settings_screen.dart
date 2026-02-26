@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/local_storage_service.dart';
 import '../services/subscription_service.dart';
 import '../services/sync_service.dart';
 import '../utils/ui_utils.dart';
@@ -14,6 +15,21 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  String _userName = 'ユーザー名';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final name = LocalStorageService.getString('user_name') ?? 'ユーザー名';
+    setState(() {
+      _userName = name;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,6 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         children: [
           _buildSection('アカウント'),
+          _buildUserNameTile(),
           _buildSubscriptionTile(),
           _buildPairManagementTile(),
           const Divider(),
@@ -55,6 +72,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildUserNameTile() {
+    return ListTile(
+      leading: const Icon(Icons.person),
+      title: const Text('名前'),
+      subtitle: Text(_userName),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: _changeUserName,
+    );
+  }
+
   Widget _buildSubscriptionTile() {
     final isPremium = SubscriptionService.isPremium;
 
@@ -76,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListTile(
       leading: const Icon(Icons.people),
       title: const Text('ペア管理'),
-      subtitle: const Text('招待・解除'),
+      subtitle: const Text('招待・参加'),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
         Navigator.push(
@@ -92,7 +119,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return ListTile(
       leading: const Icon(Icons.sync),
-      title: const Text('同期モード'),
+      title: Row(
+        children: [
+          const Text('同期モード'),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _showSyncModeHelp,
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: UIUtils.primaryColor, width: 1.5),
+              ),
+              child: const Center(
+                child: Text(
+                  '?',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: UIUtils.primaryColor,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       subtitle: Text(_getSyncModeLabel(currentMode)),
       trailing: const Icon(Icons.chevron_right),
       onTap: _showSyncModeDialog,
@@ -188,6 +241,100 @@ class _SettingsScreenState extends State<SettingsScreen> {
       leading: const Icon(Icons.logout, color: Colors.red),
       title: const Text('ログアウト', style: TextStyle(color: Colors.red)),
       onTap: _logout,
+    );
+  }
+
+  Future<void> _changeUserName() async {
+    final controller = TextEditingController(text: _userName);
+
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text('名前を変更'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: '名前を入力',
+            border: OutlineInputBorder(),
+          ),
+          maxLength: 20,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                Navigator.pop(context, name);
+              }
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+
+    if (newName != null) {
+      await LocalStorageService.setString('user_name', newName);
+      setState(() {
+        _userName = newName;
+      });
+      if (mounted) {
+        UIUtils.showSnackBar(context, '名前を変更しました');
+      }
+    }
+  }
+
+  void _showSyncModeHelp() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text('同期モードについて'),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Wi-Fiのみ',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4),
+              Text('Wi-Fi接続時のみデータを同期します。モバイルデータ通信量を節約できます。'),
+              SizedBox(height: 16),
+              Text(
+                'Wi-Fi + モバイル通信',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4),
+              Text('Wi-Fiとモバイルデータ通信の両方でデータを同期します。常に最新の状態を保てます。'),
+              SizedBox(height: 16),
+              Text(
+                '手動のみ',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4),
+              Text('自動同期を行わず、「今すぐ同期」ボタンを押したときのみ同期します。'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
     );
   }
 

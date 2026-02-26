@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/group.dart';
 import '../services/pair_service.dart';
@@ -15,18 +16,11 @@ class PairManagementScreen extends StatefulWidget {
 class _PairManagementScreenState extends State<PairManagementScreen> {
   Group? _group;
   bool _isLoading = true;
-  final _inviteCodeController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadGroup();
-  }
-
-  @override
-  void dispose() {
-    _inviteCodeController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadGroup() async {
@@ -54,8 +48,19 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ペア管理'),
+        title: const Text('💑 ペア管理'),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                UIUtils.primaryColor,
+                UIUtils.primaryColor.withOpacity(0.8),
+              ],
+            ),
+          ),
+        ),
       ),
+      backgroundColor: UIUtils.backgroundColor,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _buildContent(),
@@ -75,8 +80,6 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
         _buildInviteSection(),
         const SizedBox(height: 24),
         _buildMembersSection(),
-        const SizedBox(height: 24),
-        _buildDangerZone(),
       ],
     );
   }
@@ -90,102 +93,96 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: UIUtils.primaryColor.withOpacity(0.1),
+              gradient: LinearGradient(
+                colors: [
+                  UIUtils.primaryColor.withOpacity(0.3),
+                  UIUtils.secondaryColor.withOpacity(0.3),
+                ],
+              ),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: UIUtils.primaryColor.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
             child: const Icon(
               Icons.favorite,
-              size: 80,
+              size: 100,
               color: UIUtils.primaryColor,
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 40),
           const Text(
-            'パートナーと一緒に\n思い出を共有しよう',
+            'パートナーと一緒に\n思い出を共有しよう ✨',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               height: 1.4,
+              color: UIUtils.textColor,
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'グループを作成して招待コードを\nパートナーに共有すると、\n二人で思い出を管理できます',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: UIUtils.subtextColor,
-              height: 1.6,
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: UIUtils.primaryColor.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Text(
+              'リンクを作成して招待すると、\n二人で思い出を管理できます',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: UIUtils.subtextColor,
+                height: 1.6,
+              ),
             ),
           ),
           const SizedBox(height: 48),
-          SizedBox(
-            width: double.infinity,
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  UIUtils.primaryColor,
+                  UIUtils.primaryColor.withOpacity(0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: UIUtils.primaryColor.withOpacity(0.4),
+                  blurRadius: 15,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
             child: ElevatedButton.icon(
               onPressed: _createGroup,
-              icon: const Icon(Icons.add_circle_outline),
-              label: const Text('グループを作成'),
+              icon: const Icon(Icons.add_circle_outline, size: 28),
+              label: const Text(
+                'ペアリンクを作成',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(20),
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: _showJoinDialog,
-            icon: const Icon(Icons.group_add),
-            label: const Text('招待コードで参加'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.all(20),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showJoinDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('グループに参加'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'パートナーから受け取った\n招待コードを入力してください',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _inviteCodeController,
-              decoration: const InputDecoration(
-                hintText: '招待コード（6桁）',
-                border: OutlineInputBorder(),
-              ),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 24,
-                letterSpacing: 4,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLength: 6,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // TODO: 招待コードで参加
-              Navigator.pop(context);
-              UIUtils.showSnackBar(context, 'グループに参加しました');
-            },
-            child: const Text('参加'),
           ),
         ],
       ),
@@ -193,208 +190,460 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
   }
 
   Widget _buildGroupInfo() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.people, color: UIUtils.primaryColor),
-                const SizedBox(width: 8),
-                Text(
-                  _group!.name,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'メンバー: ${_group!.memberIds.length}/2',
-              style: const TextStyle(
-                fontSize: 14,
-                color: UIUtils.subtextColor,
-              ),
-            ),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            UIUtils.primaryColor.withOpacity(0.2),
+            UIUtils.secondaryColor.withOpacity(0.2),
           ],
         ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: UIUtils.primaryColor.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: UIUtils.primaryColor,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.people,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _group!.name,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: UIUtils.textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'メンバー: ${_group!.memberIds.length}/2',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: UIUtils.subtextColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildInviteSection() {
     if (_group!.memberIds.length >= 2) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                '招待コード',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'グループは満員です',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: UIUtils.subtextColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '招待コード',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: UIUtils.primaryColor.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: UIUtils.backgroundColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _group!.inviteCode ?? 'なし',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 4,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.copy),
-                    onPressed: () => _copyInviteCode(_group!.inviteCode ?? ''),
-                  ),
-                ],
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.check_circle,
+              size: 60,
+              color: UIUtils.primaryColor,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'ペアリング完了！',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: UIUtils.textColor,
               ),
             ),
             const SizedBox(height: 8),
             const Text(
-              'このコードをパートナーに共有してください',
+              '二人で思い出を共有できます',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: UIUtils.subtextColor,
               ),
             ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: _regenerateInviteCode,
-              child: const Text('新しいコードを生成'),
-            ),
           ],
         ),
+      );
+    }
+
+    final inviteLink = 'placee://join/${_group!.inviteCode}';
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: UIUtils.primaryColor.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: UIUtils.accentColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.link,
+                  color: UIUtils.primaryColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                '招待リンク',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: UIUtils.textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // リンクをコピーボタン
+          InkWell(
+            onTap: () => _copyInviteLink(inviteLink),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    UIUtils.secondaryColor.withOpacity(0.3),
+                    UIUtils.accentColor.withOpacity(0.2),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.copy,
+                    color: UIUtils.primaryColor,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'リンクをコピー',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: UIUtils.textColor,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'コピーしてLINEなどで送信',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: UIUtils.subtextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: UIUtils.primaryColor,
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // LINEで共有ボタン
+          InkWell(
+            onTap: () => _shareToLine(inviteLink),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF00B900),
+                    Color(0xFF00D300),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00B900).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(
+                    Icons.chat_bubble,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'LINEで共有',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // その他の方法で共有ボタン
+          InkWell(
+            onTap: () => _shareLink(inviteLink),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: UIUtils.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: UIUtils.primaryColor,
+                  width: 2,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(
+                    Icons.share,
+                    color: UIUtils.primaryColor,
+                    size: 24,
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'その他の方法で共有',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: UIUtils.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: UIUtils.accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.info_outline,
+                  color: UIUtils.primaryColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: const Text(
+                    'リンクをタップすると、アプリが開いて自動的にペアリングされます',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: UIUtils.subtextColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildMembersSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'メンバー',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: UIUtils.primaryColor.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: UIUtils.primaryColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.group,
+                  color: UIUtils.primaryColor,
+                  size: 24,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            ..._group!.memberIds.map((memberId) {
-              final isOwner = memberId == _group!.ownerId;
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: UIUtils.primaryColor.withOpacity(0.2),
-                  child: Text(
-                    memberId[0].toUpperCase(),
-                    style: const TextStyle(
-                      color: UIUtils.primaryColor,
-                      fontWeight: FontWeight.bold,
+              const SizedBox(width: 12),
+              const Text(
+                'メンバー',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: UIUtils.textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ..._group!.memberIds.map((memberId) {
+            final isOwner = memberId == _group!.ownerId;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    UIUtils.secondaryColor.withOpacity(0.2),
+                    UIUtils.accentColor.withOpacity(0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          UIUtils.primaryColor,
+                          UIUtils.primaryColor.withOpacity(0.8),
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        memberId[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                title: Text(memberId),
-                subtitle: isOwner ? const Text('オーナー') : null,
-                trailing: !isOwner
-                    ? IconButton(
-                        icon: const Icon(Icons.remove_circle),
-                        color: Colors.red,
-                        onPressed: () => _removeMember(memberId),
-                      )
-                    : null,
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDangerZone() {
-    return Card(
-      color: Colors.red[50],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '危険な操作',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          memberId,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: UIUtils.textColor,
+                          ),
+                        ),
+                        if (isOwner)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: UIUtils.primaryColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'オーナー',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: _leaveGroup,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
-                ),
-                child: const Text('グループから退出'),
-              ),
-            ),
-          ],
-        ),
+            );
+          }),
+        ],
       ),
     );
   }
 
   Future<void> _createGroup() async {
     final group = await PairService.createGroup(
-      name: 'カップルグループ',
+      name: '💑 カップルグループ',
       ownerId: 'user_id',
     );
 
@@ -403,82 +652,27 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
     });
 
     if (mounted) {
-      UIUtils.showSnackBar(context, 'グループを作成しました');
+      UIUtils.showSnackBar(context, 'ペアリンクを作成しました！');
     }
   }
 
-  void _copyInviteCode(String code) {
-    Clipboard.setData(ClipboardData(text: code));
-    UIUtils.showSnackBar(context, '招待コードをコピーしました');
+  void _copyInviteLink(String link) {
+    Clipboard.setData(ClipboardData(text: link));
+    UIUtils.showSnackBar(context, 'リンクをコピーしました！');
   }
 
-  Future<void> _regenerateInviteCode() async {
-    final confirmed = await UIUtils.showConfirmDialog(
-      context,
-      title: '招待コードを再生成',
-      content: '新しい招待コードを生成しますか？\n以前のコードは無効になります。',
+  void _shareToLine(String link) {
+    // LINE共有用のURLスキーム
+    Share.share(
+      'Placeeに招待します！\nこのリンクからアプリを開いてペアリングしましょう ✨\n\n$link',
+      subject: 'Placeeへの招待',
     );
-
-    if (confirmed == true && _group != null) {
-      final newCode = await PairService.regenerateInviteCode(_group!);
-      setState(() {
-        _group = _group!;
-      });
-
-      if (mounted) {
-        UIUtils.showSnackBar(context, '新しい招待コードを生成しました');
-      }
-    }
   }
 
-  Future<void> _removeMember(String memberId) async {
-    final confirmed = await UIUtils.showConfirmDialog(
-      context,
-      title: 'メンバーを削除',
-      content: 'このメンバーをグループから削除しますか？',
-      confirmText: '削除',
+  void _shareLink(String link) {
+    Share.share(
+      'Placeeに招待します！\nこのリンクからアプリを開いてペアリングしましょう ✨\n\n$link',
+      subject: 'Placeeへの招待',
     );
-
-    if (confirmed == true && _group != null) {
-      final updatedGroup = await PairService.removeMemberFromGroup(
-        group: _group!,
-        userId: memberId,
-      );
-
-      setState(() {
-        _group = updatedGroup;
-      });
-
-      if (mounted) {
-        UIUtils.showSnackBar(context, 'メンバーを削除しました');
-      }
-    }
-  }
-
-  Future<void> _leaveGroup() async {
-    final confirmed = await UIUtils.showConfirmDialog(
-      context,
-      title: 'グループから退出',
-      content: 'グループから退出しますか？\n※オーナーは退出できません',
-      confirmText: '退出',
-    );
-
-    if (confirmed == true && _group != null) {
-      try {
-        await PairService.leaveGroup(
-          group: _group!,
-          userId: 'user_id',
-        );
-
-        if (mounted) {
-          UIUtils.showSnackBar(context, 'グループから退出しました');
-          Navigator.pop(context);
-        }
-      } catch (e) {
-        if (mounted) {
-          UIUtils.showSnackBar(context, e.toString());
-        }
-      }
-    }
   }
 }

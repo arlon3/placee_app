@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../utils/ui_utils.dart';
 
 class DateTagWidget extends StatelessWidget {
@@ -103,6 +104,13 @@ class DateTagWidget extends StatelessWidget {
 class DateTagInputDialog extends StatefulWidget {
   const DateTagInputDialog({super.key});
 
+  static Future<String?> show(BuildContext context) {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => const DateTagInputDialog(),
+    );
+  }
+
   @override
   State<DateTagInputDialog> createState() => _DateTagInputDialogState();
 }
@@ -131,6 +139,12 @@ class _DateTagInputDialogState extends State<DateTagInputDialog> {
         ),
         maxLength: 20,
         autofocus: true,
+        onSubmitted: (_) {
+          final tag = _controller.text.trim();
+          if (tag.isNotEmpty) {
+            Navigator.pop(context, tag);
+          }
+        },
       ),
       actions: [
         TextButton(
@@ -147,13 +161,6 @@ class _DateTagInputDialogState extends State<DateTagInputDialog> {
           child: const Text('追加'),
         ),
       ],
-    );
-  }
-
-  static Future<String?> show(BuildContext context) {
-    return showDialog<String>(
-      context: context,
-      builder: (context) => const DateTagInputDialog(),
     );
   }
 }

@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 
-enum PinCategory {
-  visited,
-  wantToGo,
-  diary,
+// 投稿タイプ（ピンの形を決定）
+enum PostType {
+  visited,   // 行った（丸）
+  wantToGo,  // 行きたい（四角）
 }
 
+// カテゴリ（ピンの色を決定）
+enum PostCategory {
+  food,          // ご飯
+  entertainment, // 遊び
+  sightseeing,   // 観光
+  scenery,       // 景色
+  shop,          // お店
+  other,         // その他
+}
+
+// ピンの形
 enum PinShape {
-  circle,
-  heart,
-  star,
+  circle,  // 丸（行った）
+  square,  // 四角（行きたい）
 }
 
 class Pin {
@@ -17,7 +27,8 @@ class Pin {
   final String postId;
   final double latitude;
   final double longitude;
-  final PinCategory category;
+  final PostType postType;     // 投稿タイプ（行った/行きたい）
+  final PostCategory category;  // カテゴリ（ご飯/遊び/観光など）
   final String emoji;
   final Color color;
   final PinShape shape;
@@ -28,6 +39,7 @@ class Pin {
     required this.postId,
     required this.latitude,
     required this.longitude,
+    required this.postType,
     required this.category,
     required this.emoji,
     required this.color,
@@ -41,6 +53,7 @@ class Pin {
       'postId': postId,
       'latitude': latitude,
       'longitude': longitude,
+      'postType': postType.toString(),
       'category': category.toString(),
       'emoji': emoji,
       'color': color.value,
@@ -55,13 +68,19 @@ class Pin {
       postId: json['postId'],
       latitude: json['latitude'],
       longitude: json['longitude'],
-      category: PinCategory.values.firstWhere(
+      postType: PostType.values.firstWhere(
+        (e) => e.toString() == json['postType'],
+        orElse: () => PostType.visited,
+      ),
+      category: PostCategory.values.firstWhere(
         (e) => e.toString() == json['category'],
+        orElse: () => PostCategory.other,
       ),
       emoji: json['emoji'],
       color: Color(json['color']),
       shape: PinShape.values.firstWhere(
         (e) => e.toString() == json['shape'],
+        orElse: () => PinShape.circle,
       ),
       createdAt: DateTime.parse(json['createdAt']),
     );
@@ -72,7 +91,8 @@ class Pin {
     String? postId,
     double? latitude,
     double? longitude,
-    PinCategory? category,
+    PostType? postType,
+    PostCategory? category,
     String? emoji,
     Color? color,
     PinShape? shape,
@@ -83,6 +103,7 @@ class Pin {
       postId: postId ?? this.postId,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      postType: postType ?? this.postType,
       category: category ?? this.category,
       emoji: emoji ?? this.emoji,
       color: color ?? this.color,
