@@ -54,3 +54,4 @@ flutter:
   assets:
     - assets/images/
     - assets/lottie/
+    - assets/map_styles/google_maps_style.json

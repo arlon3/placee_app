@@ -9,6 +9,7 @@ class Post {
   final double rating;
   final List<String> anniversaryTags;
   final DateTime visitDate;
+  final bool isShared;  // ペアと共有するか
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<Comment> comments;
@@ -24,6 +25,7 @@ class Post {
     required this.rating,
     required this.anniversaryTags,
     required this.visitDate,
+    this.isShared = true,  // デフォルトは共有
     required this.createdAt,
     required this.updatedAt,
     required this.comments,
@@ -41,6 +43,7 @@ class Post {
       'rating': rating,
       'anniversaryTags': anniversaryTags,
       'visitDate': visitDate.toIso8601String(),
+      'isShared': isShared,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'comments': comments.map((c) => c.toJson()).toList(),
@@ -59,6 +62,7 @@ class Post {
       rating: json['rating']?.toDouble() ?? 0.0,
       anniversaryTags: List<String>.from(json['anniversaryTags'] ?? []),
       visitDate: DateTime.parse(json['visitDate']),
+      isShared: json['isShared'] ?? true,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
       comments: (json['comments'] as List?)
@@ -79,6 +83,7 @@ class Post {
     double? rating,
     List<String>? anniversaryTags,
     DateTime? visitDate,
+    bool? isShared,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<Comment>? comments,
@@ -94,6 +99,7 @@ class Post {
       rating: rating ?? this.rating,
       anniversaryTags: anniversaryTags ?? this.anniversaryTags,
       visitDate: visitDate ?? this.visitDate,
+      isShared: isShared ?? this.isShared,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       comments: comments ?? this.comments,

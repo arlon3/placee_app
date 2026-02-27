@@ -25,6 +25,7 @@ enum PinShape {
 class Pin {
   final String id;
   final String postId;
+  final String createdByUserId;  // 作成者ID
   final double latitude;
   final double longitude;
   final PostType postType;     // 投稿タイプ（行った/行きたい）
@@ -32,11 +33,13 @@ class Pin {
   final String emoji;
   final Color color;
   final PinShape shape;
+  final bool isShared;  // ペアと共有するか
   final DateTime createdAt;
 
   Pin({
     required this.id,
     required this.postId,
+    required this.createdByUserId,
     required this.latitude,
     required this.longitude,
     required this.postType,
@@ -44,6 +47,7 @@ class Pin {
     required this.emoji,
     required this.color,
     required this.shape,
+    this.isShared = true,  // デフォルトは共有
     required this.createdAt,
   });
 
@@ -51,6 +55,7 @@ class Pin {
     return {
       'id': id,
       'postId': postId,
+      'createdByUserId': createdByUserId,
       'latitude': latitude,
       'longitude': longitude,
       'postType': postType.toString(),
@@ -58,6 +63,7 @@ class Pin {
       'emoji': emoji,
       'color': color.value,
       'shape': shape.toString(),
+      'isShared': isShared,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -66,6 +72,7 @@ class Pin {
     return Pin(
       id: json['id'],
       postId: json['postId'],
+      createdByUserId: json['createdByUserId'],
       latitude: json['latitude'],
       longitude: json['longitude'],
       postType: PostType.values.firstWhere(
@@ -82,6 +89,7 @@ class Pin {
         (e) => e.toString() == json['shape'],
         orElse: () => PinShape.circle,
       ),
+      isShared: json['isShared'] ?? true,
       createdAt: DateTime.parse(json['createdAt']),
     );
   }
@@ -89,6 +97,7 @@ class Pin {
   Pin copyWith({
     String? id,
     String? postId,
+    String? createdByUserId,
     double? latitude,
     double? longitude,
     PostType? postType,
@@ -96,11 +105,13 @@ class Pin {
     String? emoji,
     Color? color,
     PinShape? shape,
+    bool? isShared,
     DateTime? createdAt,
   }) {
     return Pin(
       id: id ?? this.id,
       postId: postId ?? this.postId,
+      createdByUserId: createdByUserId ?? this.createdByUserId,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       postType: postType ?? this.postType,
@@ -108,6 +119,7 @@ class Pin {
       emoji: emoji ?? this.emoji,
       color: color ?? this.color,
       shape: shape ?? this.shape,
+      isShared: isShared ?? this.isShared,
       createdAt: createdAt ?? this.createdAt,
     );
   }
