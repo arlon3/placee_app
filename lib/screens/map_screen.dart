@@ -18,10 +18,10 @@ class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
   @override
-  State<MapScreen> createState() => _MapScreenState();
+  State<MapScreen> createState() => MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
   List<Pin> _pins = [];
@@ -33,6 +33,23 @@ class _MapScreenState extends State<MapScreen> {
   LatLng? _currentLocation;
   double _currentZoom = 13.0;
   String _searchQuery = '';
+
+  // 外部からアクセス可能なgetter
+  MapController get mapController => _mapController;
+
+  // 現在のマップ中心位置を取得
+  LatLng get currentCenter {
+    try {
+      return _mapController.camera.center;
+    } catch (e) {
+      return _currentLocation ?? const LatLng(35.6812, 139.7671);
+    }
+  }
+
+  // データをリロード（外部から呼び出し可能）
+  Future<void> reloadData() async {
+    await _loadData();
+  }
 
   @override
   void initState() {
@@ -92,7 +109,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   List<Pin> get _filteredPins {
-    return _pins.where((pin) {
+    final filtered = _pins.where((pin) {
       // 投稿タイプでフィルタ
       if (!_selectedTypes.contains(pin.postType)) {
         return false;
@@ -164,17 +181,29 @@ class _MapScreenState extends State<MapScreen> {
 
       return true;
     }).toList();
+
+    return filtered;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('マップ'),
+        title: Text('マップ (${_filteredPins.length}件)'),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterSheet,
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'データを更新',
+            onPressed: () async {
+              await reloadData();
+              if (mounted) {
+                UIUtils.showSnackBar(context, 'データを更新しました');
+              }
+            },
           ),
           IconButton(
             icon: const Icon(Icons.settings),
@@ -349,10 +378,8 @@ class _MapScreenState extends State<MapScreen> {
       ),
       children: [
         TileLayer(
-          urlTemplate:
-              'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-          subdomains: const ['a', 'b', 'c', 'd'],
-          userAgentPackageName: 'com.example.app',
+          urlTemplate: 'https://tile.openstreetmap.jp/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.placee.app',
           maxZoom: 19,
         ),
         MarkerLayer(

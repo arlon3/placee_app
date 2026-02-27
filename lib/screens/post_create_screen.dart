@@ -2,9 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/pin.dart';
+import '../services/image_service.dart';
+import '../services/local_storage_service.dart';
+import '../services/post_service.dart';
 import '../services/subscription_service.dart';
 import '../utils/ui_utils.dart';
 import '../utils/validation_utils.dart';
@@ -12,15 +17,10 @@ import '../widgets/date_tag_widget.dart';
 import '../widgets/emoji_picker_widget.dart';
 import '../widgets/rating_widget.dart';
 
-/// 投稿作成画面（改善版）
-///
-/// 改善点:
-/// 1. マップ中央の緯度経度を初期ピン位置として使用
-/// 2. アイコン設定セクションをコンパクトに
-/// 3. くすみ系カラーデザイン適用
+/// 投稿作成画面（改善版・ピン反映修正）
 class PostCreateScreenRedesigned extends StatefulWidget {
   final LatLng? initialLocation;
-  final MapController? mapController; // マップコントローラーを受け取る
+  final MapController? mapController;
 
   const PostCreateScreenRedesigned({
     super.key,
@@ -38,6 +38,8 @@ class _PostCreateScreenRedesignedState
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _uuid = Uuid();
+  final _imagePicker = ImagePicker();
 
   List<File> _selectedImages = [];
   double _rating = 3.0;
@@ -52,12 +54,13 @@ class _PostCreateScreenRedesignedState
 
   LatLng? _pinLocation;
   bool _isSubmitting = false;
+  bool _isShared = true;
 
   @override
   void initState() {
     super.initState();
-    // ★改善点1: マップ中央の緯度経度を取得
     _pinLocation = _getInitialPinLocation();
+    debugPrint('🎯 投稿作成画面初期化 - ピン位置: $_pinLocation');
   }
 
   @override
@@ -67,28 +70,26 @@ class _PostCreateScreenRedesignedState
     super.dispose();
   }
 
-  /// ★改善点1: マップ中央の緯度経度を初期ピン位置として使用
-  ///
-  /// 優先順位:
-  /// 1. mapControllerが渡されている場合、マップ中央を取得
-  /// 2. initialLocationが渡されている場合、それを使用
-  /// 3. どちらもない場合は東京駅をデフォルトに
   LatLng _getInitialPinLocation() {
+    // 1. MapControllerから取得を試みる
     if (widget.mapController != null) {
       try {
         final center = widget.mapController!.camera.center;
-        debugPrint('📍 マップ中央の位置を取得: $center');
+        debugPrint('📍 MapControllerから位置を取得: $center');
         return center;
       } catch (e) {
-        debugPrint('⚠️ マップ中央の取得に失敗: $e');
+        debugPrint('⚠️ MapControllerから位置取得失敗: $e');
       }
     }
 
+    // 2. initialLocationを使用
     if (widget.initialLocation != null) {
+      debugPrint('📍 initialLocationを使用: ${widget.initialLocation}');
       return widget.initialLocation!;
     }
 
-    // デフォルト: 東京駅
+    // 3. デフォルト位置（東京）
+    debugPrint('📍 デフォルト位置（東京）を使用');
     return const LatLng(35.6812, 139.7671);
   }
 
@@ -96,86 +97,73 @@ class _PostCreateScreenRedesignedState
   Widget build(BuildContext context) {
     final maxPhotos = SubscriptionService.maxPhotos;
 
-    return Scaffold(
-      backgroundColor: UIUtils.backgroundColor,
-      appBar: AppBar(
-        title: const Text('新しい思い出を記録'),
-        backgroundColor: UIUtils.primaryColor,
-        actions: [
-          TextButton(
-            onPressed: _isSubmitting ? null : _submitPost,
-            child: _isSubmitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: UIUtils.backgroundColor,
+        appBar: AppBar(
+          title: const Text('新しい思い出を記録'),
+          backgroundColor: UIUtils.primaryColor,
+          actions: [
+            TextButton(
+              onPressed: _isSubmitting ? null : _submitPost,
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      '投稿',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
                     ),
-                  )
-                : Text(
-                    '投稿',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // 写真選択
-            _buildPhotoSection(maxPhotos),
-            const SizedBox(height: 20),
-
-            // タイトル
-            _buildTitleField(),
-            const SizedBox(height: 16),
-
-            // 説明
-            _buildDescriptionField(),
-            const SizedBox(height: 20),
-
-            // 投稿タイプ
-            _buildPostTypeSection(),
-            const SizedBox(height: 20),
-
-            // カテゴリ
-            _buildCategorySection(),
-            const SizedBox(height: 20),
-
-            // ★改善点2: アイコン設定をコンパクトに
-            _buildCompactPinCustomization(),
-            const SizedBox(height: 20),
-
-            // レーティング
-            _buildRatingSection(),
-            const SizedBox(height: 20),
-
-            // 日付
-            _buildDateSection(),
-            const SizedBox(height: 20),
-
-            // 記念日タグ
-            _buildAnniversarySection(),
-            const SizedBox(height: 20),
-
-            // マップ
-            _buildMapSection(),
-            const SizedBox(height: 32),
+            ),
+            const SizedBox(width: 8),
           ],
+        ),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildPhotoSection(maxPhotos),
+              const SizedBox(height: 20),
+              _buildTitleField(),
+              const SizedBox(height: 16),
+              _buildDescriptionField(),
+              const SizedBox(height: 20),
+              _buildMapSection(),
+              const SizedBox(height: 20),
+              _buildPostTypeSection(),
+              const SizedBox(height: 20),
+              _buildCategorySection(),
+              const SizedBox(height: 20),
+              _buildCompactPinCustomization(),
+              const SizedBox(height: 20),
+              _buildRatingSection(),
+              const SizedBox(height: 20),
+              _buildDateSection(),
+              const SizedBox(height: 20),
+              _buildAnniversarySection(),
+              const SizedBox(height: 20),
+              _buildShareSection(),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  /// 写真選択セクション
   Widget _buildPhotoSection(int maxPhotos) {
     return UIUtils.buildSection(
       title: '写真',
@@ -270,7 +258,6 @@ class _PostCreateScreenRedesignedState
     );
   }
 
-  /// タイトルフィールド
   Widget _buildTitleField() {
     return TextFormField(
       controller: _titleController,
@@ -283,7 +270,6 @@ class _PostCreateScreenRedesignedState
     );
   }
 
-  /// 説明フィールド
   Widget _buildDescriptionField() {
     return TextFormField(
       controller: _descriptionController,
@@ -294,88 +280,74 @@ class _PostCreateScreenRedesignedState
         alignLabelWithHint: true,
       ),
       maxLines: 4,
-      validator: ValidationUtils.validateDescription,
     );
   }
 
-  /// 投稿タイプセクション
-  Widget _buildPostTypeSection() {
+  Widget _buildMapSection() {
     return UIUtils.buildSection(
-      title: '投稿タイプ',
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildTypeButton(
-              type: PostType.visited,
-              label: '行った',
-              icon: Icons.check_circle,
-              color: UIUtils.visitedColor,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildTypeButton(
-              type: PostType.wantToGo,
-              label: '行きたい',
-              icon: Icons.favorite_border,
-              color: UIUtils.wantToGoColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTypeButton({
-    required PostType type,
-    required String label,
-    required IconData icon,
-    required Color color,
-  }) {
-    final isSelected = _selectedType == type;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedType = type;
-          _selectedShape =
-              type == PostType.visited ? PinShape.circle : PinShape.square;
-        });
-      },
-      child: AnimatedContainer(
-        duration: UIUtils.fastAnimationDuration,
-        curve: UIUtils.animationCurve,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+      title: 'ピンの位置',
+      subtitle: _pinLocation != null
+          ? '緯度: ${_pinLocation!.latitude.toStringAsFixed(4)}, 経度: ${_pinLocation!.longitude.toStringAsFixed(4)}'
+          : '位置が設定されていません',
+      child: Container(
+        height: 200,
         decoration: BoxDecoration(
-          color: isSelected ? color : UIUtils.cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : UIUtils.dividerColor,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          border: Border.all(color: UIUtils.dividerColor),
         ),
-        child: Column(
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
           children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : UIUtils.subtextColor,
-              size: 24,
+            FlutterMap(
+              options: MapOptions(
+                center: _pinLocation ?? const LatLng(35.6812, 139.7671),
+                zoom: 15.0,
+                onTap: (tapPosition, point) {
+                  setState(() {
+                    _pinLocation = point;
+                  });
+                  debugPrint('🎯 新しいピン位置を設定: $point');
+                },
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.jp/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.placee.app',
+                ),
+                if (_pinLocation != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: _pinLocation!,
+                        width: 40,
+                        height: 50,
+                        child: Icon(
+                          Icons.location_on,
+                          color: _selectedColor,
+                          size: 40,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : UIUtils.textColor,
+            Positioned(
+              bottom: 8,
+              left: 8,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'タップして位置を変更',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
             ),
           ],
@@ -384,43 +356,60 @@ class _PostCreateScreenRedesignedState
     );
   }
 
-  /// カテゴリセクション
-  Widget _buildCategorySection() {
+  Widget _buildPostTypeSection() {
     return UIUtils.buildSection(
-      title: 'カテゴリ',
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: PostCategory.values.map((category) {
-          final isSelected = _selectedCategory == category;
-          final color =
-              UIUtils.getCategoryColor(category.toString().split('.').last);
+      title: '投稿タイプ',
+      child: Row(
+        children: PostType.values.map((type) {
+          final isSelected = _selectedType == type;
+          final label = type == PostType.visited ? '行った' : '行きたい';
+          final icon =
+              type == PostType.visited ? Icons.check_circle : Icons.location_on;
 
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedCategory = category;
-                _selectedColor = color;
-              });
-            },
-            child: AnimatedContainer(
-              duration: UIUtils.fastAnimationDuration,
-              curve: UIUtils.animationCurve,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? color : color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: color,
-                  width: isSelected ? 1.5 : 1,
-                ),
-              ),
-              child: Text(
-                UIUtils.getCategoryLabel(category.toString().split('.').last),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: isSelected ? Colors.white : color,
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    _selectedType = type;
+                    _selectedShape = type == PostType.visited
+                        ? PinShape.circle
+                        : PinShape.square;
+                  });
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected ? UIUtils.primaryColor : UIUtils.cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? UIUtils.primaryColor
+                          : UIUtils.dividerColor,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        icon,
+                        color: isSelected ? Colors.white : UIUtils.primaryColor,
+                        size: 32,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected ? Colors.white : UIUtils.textColor,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -430,259 +419,276 @@ class _PostCreateScreenRedesignedState
     );
   }
 
-  /// ★改善点2: コンパクトなピンカスタマイズセクション
-  ///
-  /// 縦幅を圧縮し、必要な情報のみ表示
-  Widget _buildCompactPinCustomization() {
+  Widget _buildCategorySection() {
+    final categories = [
+      {
+        'type': PostCategory.food,
+        'label': 'ご飯',
+        'icon': Icons.restaurant,
+        'color': UIUtils.foodColor
+      },
+      {
+        'type': PostCategory.entertainment,
+        'label': '遊び',
+        'icon': Icons.celebration,
+        'color': UIUtils.entertainmentColor
+      },
+      {
+        'type': PostCategory.sightseeing,
+        'label': '観光',
+        'icon': Icons.castle,
+        'color': UIUtils.sightseeingColor
+      },
+      {
+        'type': PostCategory.scenery,
+        'label': '景色',
+        'icon': Icons.landscape,
+        'color': UIUtils.sceneryColor
+      },
+      {
+        'type': PostCategory.shop,
+        'label': 'お店',
+        'icon': Icons.shopping_bag,
+        'color': UIUtils.shopColor
+      },
+      {
+        'type': PostCategory.other,
+        'label': 'その他',
+        'icon': Icons.more_horiz,
+        'color': UIUtils.otherColor
+      },
+    ];
+
     return UIUtils.buildSection(
-      title: 'ピンの設定',
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: UIUtils.cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: UIUtils.dividerColor),
+      title: 'カテゴリ',
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          childAspectRatio: 1.0,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
         ),
-        child: Row(
-          children: [
-            // 絵文字選択
-            Expanded(
-              child: GestureDetector(
-                onTap: _selectEmoji,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: UIUtils.backgroundColor,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        _selectedEmoji,
-                        style: const TextStyle(fontSize: 28),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '絵文字を変更',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: UIUtils.subtextColor,
-                        ),
-                      ),
-                    ],
-                  ),
+        itemCount: categories.length,
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          final type = category['type'] as PostCategory;
+          final isSelected = _selectedCategory == type;
+
+          return InkWell(
+            onTap: () {
+              setState(() {
+                _selectedCategory = type;
+                _selectedColor = category['color'] as Color;
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              decoration: BoxDecoration(
+                color:
+                    isSelected ? category['color'] as Color : UIUtils.cardColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected
+                      ? category['color'] as Color
+                      : UIUtils.dividerColor,
+                  width: isSelected ? 2 : 1,
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-
-            // プレビュー
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: UIUtils.backgroundColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // ピンプレビュー
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: _selectedColor,
-                      shape: _selectedShape == PinShape.circle
-                          ? BoxShape.circle
-                          : BoxShape.rectangle,
-                      borderRadius: _selectedShape == PinShape.square
-                          ? BorderRadius.circular(6)
-                          : null,
-                      boxShadow: [
-                        BoxShadow(
-                          color: _selectedColor.withOpacity(0.3),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        _selectedEmoji,
-                        style: const TextStyle(fontSize: 18),
-                      ),
-                    ),
+                  Icon(
+                    category['icon'] as IconData,
+                    color:
+                        isSelected ? Colors.white : category['color'] as Color,
+                    size: 28,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
-                    _selectedType == PostType.visited ? '丸ピン' : '四角ピン',
+                    category['label'] as String,
                     style: TextStyle(
-                      fontSize: 10,
-                      color: UIUtils.subtextColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : UIUtils.textColor,
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// レーティングセクション
-  Widget _buildRatingSection() {
-    return UIUtils.buildSection(
-      title: '評価',
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: UIUtils.cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: UIUtils.dividerColor),
-        ),
-        child: RatingWidget(
-          rating: _rating,
-          onRatingUpdate: (rating) {
-            setState(() {
-              _rating = rating;
-            });
-          },
-        ),
-      ),
-    );
-  }
-
-  /// 日付セクション
-  Widget _buildDateSection() {
-    return ListTile(
-      contentPadding: const EdgeInsets.all(14),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: UIUtils.dividerColor),
-      ),
-      tileColor: UIUtils.cardColor,
-      leading: Icon(
-        Icons.calendar_today,
-        color: UIUtils.primaryColor,
-      ),
-      title: Text(
-        '訪問日',
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: UIUtils.textColor,
-        ),
-      ),
-      trailing: Text(
-        '${_visitDate.year}/${_visitDate.month}/${_visitDate.day}',
-        style: TextStyle(
-          fontSize: 14,
-          color: UIUtils.textColor,
-        ),
-      ),
-      onTap: _selectDate,
-    );
-  }
-
-  /// 記念日タグセクション
-  Widget _buildAnniversarySection() {
-    return UIUtils.buildSection(
-      title: '記念日タグ',
-      subtitle: 'タップして追加',
-      child: DateTagWidget(
-        tags: _anniversaryTags,
-        onTagRemove: (tag) {
-          setState(() {
-            _anniversaryTags.remove(tag);
-          });
+          );
         },
-        onAddTag: _addAnniversaryTag,
       ),
     );
   }
 
-  /// 記念日タグを追加
-  Future<void> _addAnniversaryTag() async {
-    final tag = await DateTagInputDialog.show(context);
-    if (tag != null && tag.isNotEmpty) {
-      setState(() {
-        _anniversaryTags.add(tag);
-      });
-    }
-  }
-
-  /// マップセクション
-  Widget _buildMapSection() {
+  Widget _buildCompactPinCustomization() {
     return UIUtils.buildSection(
-      title: 'ピンの位置',
-      subtitle: 'マップをタップして位置を変更',
-      child: Container(
-        height: 250,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: UIUtils.dividerColor),
-        ),
-        clipBehavior: Clip.hardEdge,
-        child: FlutterMap(
-          options: MapOptions(
-            initialCenter: _pinLocation!,
-            initialZoom: 15.0,
-            onTap: (tapPosition, point) {
-              setState(() {
-                _pinLocation = point;
-              });
-            },
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.app',
-            ),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: _pinLocation!,
-                  width: 40,
-                  height: 40,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: _selectedColor,
-                      shape: _selectedShape == PinShape.circle
-                          ? BoxShape.circle
-                          : BoxShape.rectangle,
-                      borderRadius: _selectedShape == PinShape.square
-                          ? BorderRadius.circular(6)
-                          : null,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        _selectedEmoji,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                    ),
-                  ),
+      title: 'アイコン設定',
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: _selectedColor,
+              shape: _selectedShape == PinShape.circle
+                  ? BoxShape.circle
+                  : BoxShape.rectangle,
+              borderRadius: _selectedShape == PinShape.square
+                  ? BorderRadius.circular(8)
+                  : null,
+              boxShadow: [
+                BoxShadow(
+                  color: _selectedColor.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-          ],
+            child: Center(
+              child: Text(
+                _selectedEmoji,
+                style: const TextStyle(fontSize: 28),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _selectEmoji,
+              icon: const Icon(Icons.sentiment_satisfied_alt),
+              label: const Text('絵文字を変更'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: UIUtils.primaryColor,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingSection() {
+    return UIUtils.buildSection(
+      title: '評価',
+      child: RatingWidget(
+        rating: _rating,
+        onRatingUpdate: (rating) {
+          setState(() {
+            _rating = rating;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildDateSection() {
+    return UIUtils.buildSection(
+      title: '訪問日',
+      child: InkWell(
+        onTap: _selectDate,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: UIUtils.cardColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: UIUtils.dividerColor),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.calendar_today, color: UIUtils.primaryColor),
+              const SizedBox(width: 12),
+              Text(
+                '${_visitDate.year}年${_visitDate.month}月${_visitDate.day}日',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              Icon(Icons.chevron_right, color: UIUtils.subtextColor),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // ============================================
-  // イベントハンドラー
-  // ============================================
+  Widget _buildAnniversarySection() {
+    return UIUtils.buildSection(
+      title: '記念日タグ',
+      subtitle: '特別な日を記録',
+      child: Column(
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ..._anniversaryTags.map((tag) {
+                return Chip(
+                  label: Text(tag),
+                  onDeleted: () {
+                    setState(() {
+                      _anniversaryTags.remove(tag);
+                    });
+                  },
+                  backgroundColor: UIUtils.primaryColor.withOpacity(0.1),
+                  deleteIconColor: UIUtils.primaryColor,
+                );
+              }),
+              ActionChip(
+                label: const Text('+ タグ追加'),
+                onPressed: _addAnniversaryTag,
+                backgroundColor: UIUtils.cardColor,
+                side: BorderSide(color: UIUtils.primaryColor),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShareSection() {
+    return UIUtils.buildSection(
+      title: 'ペアと共有',
+      child: SwitchListTile(
+        title: const Text('この投稿をペアと共有する'),
+        subtitle: const Text('オフにすると自分だけが見られます'),
+        value: _isShared,
+        onChanged: (value) {
+          setState(() {
+            _isShared = value;
+          });
+        },
+        activeColor: UIUtils.primaryColor,
+      ),
+    );
+  }
 
   Future<void> _addImage() async {
-    // TODO: ImageService を使って画像を追加
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImages.add(File(image.path));
+        });
+      }
+    } catch (e) {
+      debugPrint('画像選択エラー: $e');
+      if (mounted) {
+        UIUtils.showSnackBar(context, '画像の選択に失敗しました', isError: true);
+      }
+    }
   }
 
   void _removeImage(File image) {
@@ -719,9 +725,24 @@ class _PostCreateScreenRedesignedState
     }
   }
 
+  Future<void> _addAnniversaryTag() async {
+    final tag = await DateTagInputDialog.show(context);
+    if (tag != null && tag.isNotEmpty) {
+      setState(() {
+        _anniversaryTags.add(tag);
+      });
+    }
+  }
+
   Future<void> _submitPost() async {
     if (!_formKey.currentState!.validate()) {
       UIUtils.showSnackBar(context, '入力内容を確認してください', isError: true);
+      return;
+    }
+
+    // ピン位置が設定されているか確認
+    if (_pinLocation == null) {
+      UIUtils.showSnackBar(context, 'ピンの位置を設定してください', isError: true);
       return;
     }
 
@@ -730,15 +751,76 @@ class _PostCreateScreenRedesignedState
     });
 
     try {
-      // TODO: PostService を使って投稿を作成
+      debugPrint('📤 投稿作成開始');
+
+      // 画像を保存
+      final photoUrls = <String>[];
+      for (final image in _selectedImages) {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final fileName = 'post_image_$timestamp.jpg';
+        final savedImage = await ImageService.saveImageLocally(image, fileName);
+        photoUrls.add(savedImage.path);
+        debugPrint('📷 画像保存: ${savedImage.path}');
+      }
+
+      // ピンを作成
+      final currentUserId = 'current_user_id';
+      final pinId = _uuid.v4();
+
+      debugPrint('📍 ピン作成 - ID: $pinId');
+      debugPrint(
+          '📍 ピン位置: lat=${_pinLocation!.latitude}, lng=${_pinLocation!.longitude}');
+      debugPrint('📍 ピンタイプ: $_selectedType');
+      debugPrint('📍 ピンカテゴリ: $_selectedCategory');
+
+      // 投稿を作成（PostServiceが正しいpostIdでピンも保存する）
+      debugPrint('📝 投稿作成開始');
+      final post = await PostService.createPost(
+        groupId: 'group_id',
+        userId: currentUserId,
+        title: _titleController.text,
+        description: _descriptionController.text.isEmpty
+            ? null
+            : _descriptionController.text,
+        photoUrls: photoUrls,
+        pin: Pin(
+          id: pinId,
+          postId: '', // PostService内で正しく設定される
+          createdByUserId: currentUserId,
+          latitude: _pinLocation!.latitude,
+          longitude: _pinLocation!.longitude,
+          postType: _selectedType,
+          category: _selectedCategory,
+          emoji: _selectedEmoji,
+          color: _selectedColor,
+          shape: _selectedShape,
+          isShared: _isShared,
+          createdAt: DateTime.now(),
+        ),
+        rating: _rating,
+        anniversaryTags: _anniversaryTags,
+        visitDate: _visitDate,
+      );
+      debugPrint('✅ 投稿とピンの作成完了 - PostID: ${post.id}, PinID: $pinId');
+
+      // 保存されたピンを確認
+      final savedPins = await LocalStorageService.getPins();
+      debugPrint('📊 保存済みピン数: ${savedPins.length}');
+      if (savedPins.isNotEmpty) {
+        final lastPin = savedPins.last;
+        debugPrint('📊 最新ピン: ID=${lastPin.id}, PostID=${lastPin.postId}, '
+            'Lat=${lastPin.latitude}, Lng=${lastPin.longitude}');
+      }
 
       if (mounted) {
-        UIUtils.showSnackBar(context, '投稿を作成しました');
+        UIUtils.showSnackBar(context, '投稿とピンを作成しました');
         Navigator.pop(context, true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ 投稿作成エラー: $e');
+      debugPrint('❌ スタックトレース: $stackTrace');
       if (mounted) {
-        UIUtils.showSnackBar(context, '投稿の作成に失敗しました', isError: true);
+        UIUtils.showSnackBar(context, '投稿の作成に失敗しました: $e', isError: true);
       }
     } finally {
       if (mounted) {

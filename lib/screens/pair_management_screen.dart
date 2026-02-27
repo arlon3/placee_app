@@ -85,106 +85,110 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
   }
 
   Widget _buildCreateGroup() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  UIUtils.primaryColor.withOpacity(0.3),
-                  UIUtils.secondaryColor.withOpacity(0.3),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    UIUtils.primaryColor.withOpacity(0.3),
+                    UIUtils.secondaryColor.withOpacity(0.3),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: UIUtils.primaryColor.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
                 ],
               ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: UIUtils.primaryColor.withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+              child: const Icon(
+                Icons.favorite,
+                size: 100,
+                color: UIUtils.primaryColor,
+              ),
             ),
-            child: const Icon(
-              Icons.favorite,
-              size: 100,
-              color: UIUtils.primaryColor,
-            ),
-          ),
-          const SizedBox(height: 40),
-          const Text(
-            'パートナーと一緒に\n思い出を共有しよう ✨',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              height: 1.4,
-              color: UIUtils.textColor,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: UIUtils.primaryColor.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Text(
-              'リンクを作成して招待すると、\n二人で思い出を管理できます',
+            const SizedBox(height: 40),
+            const Text(
+              'パートナーと一緒に\n思い出を共有しよう ✨',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 16,
-                color: UIUtils.subtextColor,
-                height: 1.6,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                height: 1.4,
+                color: UIUtils.textColor,
               ),
             ),
-          ),
-          const SizedBox(height: 48),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  UIUtils.primaryColor,
-                  UIUtils.primaryColor.withOpacity(0.8),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: UIUtils.primaryColor.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: UIUtils.primaryColor.withOpacity(0.4),
-                  blurRadius: 15,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: ElevatedButton.icon(
-              onPressed: _createGroup,
-              icon: const Icon(Icons.add_circle_outline, size: 28),
-              label: const Text(
-                'ペアリンクを作成',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+              child: const Text(
+                'リンクを作成して招待すると、\n二人で思い出を管理できます',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: UIUtils.subtextColor,
+                  height: 1.6,
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 48),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    UIUtils.primaryColor,
+                    UIUtils.primaryColor.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: UIUtils.primaryColor.withOpacity(0.4),
+                    blurRadius: 15,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: _createGroup,
+                icon: const Icon(Icons.add_circle_outline, size: 28),
+                label: const Text(
+                  'ペアリンクを作成',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -344,7 +348,7 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          
+
           // リンクをコピーボタン
           InkWell(
             onTap: () => _copyInviteLink(inviteLink),
@@ -399,9 +403,9 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // LINEで共有ボタン
           InkWell(
             onTap: () => _shareToLine(inviteLink),
@@ -444,9 +448,9 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // その他の方法で共有ボタン
           InkWell(
             onTap: () => _shareLink(inviteLink),
@@ -481,7 +485,7 @@ class _PairManagementScreenState extends State<PairManagementScreen> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.all(12),

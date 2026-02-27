@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import 'screens/diary_create_screen.dart';
 import 'screens/diary_screen.dart';
@@ -125,12 +127,13 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  final GlobalKey<MapScreenState> _mapScreenKey = GlobalKey<MapScreenState>();
 
-  final List<Widget> _screens = [
-    const MapScreen(),
-    const TimelineScreen(),
-    const DiaryScreen(),
-  ];
+  List<Widget> get _screens => [
+        MapScreen(key: _mapScreenKey),
+        const TimelineScreen(),
+        const DiaryScreen(),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -182,16 +185,34 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildMapFAB() {
     return Positioned(
       right: 16,
-      bottom: 16, // ズームアウトボタンの下（100 + 8 + 56 + 8）
+      bottom: 16,
       child: FloatingActionButton(
         heroTag: 'create_post',
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          // MapScreenのstateから現在のマップ中心とcontrollerを取得
+          final mapState = _mapScreenKey.currentState;
+          LatLng? initialLocation;
+          MapController? mapController;
+
+          if (mapState != null) {
+            initialLocation = mapState.currentCenter;
+            mapController = mapState.mapController;
+          }
+
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PostCreateScreenRedesigned(),
+              builder: (context) => PostCreateScreenRedesigned(
+                initialLocation: initialLocation,
+                mapController: mapController,
+              ),
             ),
           );
+
+          // 投稿作成後にマップをリロード
+          if (result == true && mapState != null) {
+            await mapState.reloadData();
+          }
         },
         child: const Icon(Icons.add),
       ),

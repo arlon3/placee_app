@@ -2,38 +2,38 @@ import 'package:flutter/material.dart';
 
 // 投稿タイプ（ピンの形を決定）
 enum PostType {
-  visited,   // 行った（丸）
-  wantToGo,  // 行きたい（四角）
+  visited, // 行った（丸）
+  wantToGo, // 行きたい（四角）
 }
 
 // カテゴリ（ピンの色を決定）
 enum PostCategory {
-  food,          // ご飯
+  food, // ご飯
   entertainment, // 遊び
-  sightseeing,   // 観光
-  scenery,       // 景色
-  shop,          // お店
-  other,         // その他
+  sightseeing, // 観光
+  scenery, // 景色
+  shop, // お店
+  other, // その他
 }
 
 // ピンの形
 enum PinShape {
-  circle,  // 丸（行った）
-  square,  // 四角（行きたい）
+  circle, // 丸（行った）
+  square, // 四角（行きたい）
 }
 
 class Pin {
   final String id;
   final String postId;
-  final String createdByUserId;  // 作成者ID
+  final String createdByUserId; // 作成者ID
   final double latitude;
   final double longitude;
-  final PostType postType;     // 投稿タイプ（行った/行きたい）
-  final PostCategory category;  // カテゴリ（ご飯/遊び/観光など）
+  final PostType postType; // 投稿タイプ（行った/行きたい）
+  final PostCategory category; // カテゴリ（ご飯/遊び/観光など）
   final String emoji;
   final Color color;
   final PinShape shape;
-  final bool isShared;  // ペアと共有するか
+  final bool isShared; // ペアと共有するか
   final DateTime createdAt;
 
   Pin({
@@ -47,7 +47,7 @@ class Pin {
     required this.emoji,
     required this.color,
     required this.shape,
-    this.isShared = true,  // デフォルトは共有
+    this.isShared = true, // デフォルトは共有
     required this.createdAt,
   });
 
@@ -70,11 +70,11 @@ class Pin {
 
   factory Pin.fromJson(Map<String, dynamic> json) {
     return Pin(
-      id: json['id'],
-      postId: json['postId'],
-      createdByUserId: json['createdByUserId'],
-      latitude: json['latitude'],
-      longitude: json['longitude'],
+      id: json['id'] as String? ?? '',
+      postId: json['postId'] as String? ?? '',
+      createdByUserId: json['createdByUserId'] as String? ?? 'unknown_user',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
       postType: PostType.values.firstWhere(
         (e) => e.toString() == json['postType'],
         orElse: () => PostType.visited,
@@ -83,14 +83,16 @@ class Pin {
         (e) => e.toString() == json['category'],
         orElse: () => PostCategory.other,
       ),
-      emoji: json['emoji'],
-      color: Color(json['color']),
+      emoji: json['emoji'] as String? ?? '📍',
+      color: Color(json['color'] as int? ?? 0xFF000000),
       shape: PinShape.values.firstWhere(
         (e) => e.toString() == json['shape'],
         orElse: () => PinShape.circle,
       ),
-      isShared: json['isShared'] ?? true,
-      createdAt: DateTime.parse(json['createdAt']),
+      isShared: json['isShared'] as bool? ?? true,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
     );
   }
 

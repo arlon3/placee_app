@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
-import '../models/post.dart';
+
 import '../models/pin.dart';
+import '../models/post.dart';
 import 'local_storage_service.dart';
 import 'sync_service.dart';
 
@@ -19,8 +20,10 @@ class PostService {
     required DateTime visitDate,
   }) async {
     final now = DateTime.now();
+    final postId = _uuid.v4();
+
     final post = Post(
-      id: _uuid.v4(),
+      id: postId,
       groupId: groupId,
       userId: userId,
       title: title,
@@ -35,9 +38,12 @@ class PostService {
       comments: [],
     );
 
+    // 正しいpostIdを持つピンを作成
+    final updatedPin = pin.copyWith(postId: postId);
+
     // ローカルに保存
     await LocalStorageService.savePost(post);
-    await LocalStorageService.savePin(pin);
+    await LocalStorageService.savePin(updatedPin);
 
     // 同期
     await SyncService.syncIfNeeded();
@@ -108,9 +114,8 @@ class PostService {
     required Post post,
     required String commentId,
   }) async {
-    final updatedComments = post.comments
-        .where((comment) => comment.id != commentId)
-        .toList();
+    final updatedComments =
+        post.comments.where((comment) => comment.id != commentId).toList();
 
     final updatedPost = post.copyWith(
       comments: updatedComments,
@@ -140,17 +145,17 @@ class PostService {
     final posts = await getAllPosts();
     return posts.where((post) {
       return post.visitDate.isAfter(startDate) &&
-             post.visitDate.isBefore(endDate);
+          post.visitDate.isBefore(endDate);
     }).toList();
   }
 
   static Future<List<Post>> searchPosts(String query) async {
     final posts = await getAllPosts();
     final lowerQuery = query.toLowerCase();
-    
+
     return posts.where((post) {
       return post.title.toLowerCase().contains(lowerQuery) ||
-             (post.description?.toLowerCase().contains(lowerQuery) ?? false);
+          (post.description?.toLowerCase().contains(lowerQuery) ?? false);
     }).toList();
   }
 }

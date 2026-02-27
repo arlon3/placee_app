@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../models/pin.dart';
+
 /// 上品で温かみのあるカップル向けマップ日記アプリのテーマ
 ///
 /// デザインコンセプト:
@@ -574,6 +576,42 @@ class UIUtils {
   // ============================================
   // カテゴリヘルパー
   // ============================================
+
+  /// カテゴリに応じた色を取得（PostCategoryから）
+  static Color getCategoryColorFromEnum(PostCategory category) {
+    switch (category) {
+      case PostCategory.food:
+        return foodColor;
+      case PostCategory.entertainment:
+        return entertainmentColor;
+      case PostCategory.sightseeing:
+        return sightseeingColor;
+      case PostCategory.scenery:
+        return sceneryColor;
+      case PostCategory.shop:
+        return shopColor;
+      case PostCategory.other:
+        return otherColor;
+    }
+  }
+
+  /// カテゴリの表示名を取得（PostCategoryから）
+  static String getCategoryLabelFromEnum(PostCategory category) {
+    switch (category) {
+      case PostCategory.food:
+        return 'ご飯';
+      case PostCategory.entertainment:
+        return '遊び';
+      case PostCategory.sightseeing:
+        return '観光';
+      case PostCategory.scenery:
+        return '景色';
+      case PostCategory.shop:
+        return 'お店';
+      case PostCategory.other:
+        return 'その他';
+    }
+  }
 
   /// カテゴリに応じた色を取得
   static Color getCategoryColor(String category) {
